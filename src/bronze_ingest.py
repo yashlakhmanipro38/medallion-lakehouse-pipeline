@@ -37,14 +37,14 @@ def _ingest_csv(spark: SparkSession, raw_path: str, bronze_table: str) -> None:
     .withColumn("_ingested_at", F.current_timestamp())
   )
 
-(
-  df.write.format("delta")
-  .mode("append")
-  .option("mergeSchema", "true")
-  .saveAsTable(bronze_table)
-)
+  (
+    df.write.format("delta")
+    .mode("append")
+    .option("mergeSchema", "true")
+    .saveAsTable(bronze_table)
+  )
 
-print(f"Ingested {df.count()} rows into {bronze_table}")
+  print(f"Ingested {df.count()} rows into {bronze_table}")
 
 
 def ingest(spark: SparkSession) -> None:
