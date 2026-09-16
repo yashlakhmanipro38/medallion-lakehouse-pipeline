@@ -12,6 +12,9 @@ from pyspark.sql import SparkSession, functions as F
 RAW_PATH = "data/raw/orders"
 BRONZE_TABLE = "lakehouse.bronze.orders"
 
+RAW_CUSTOMERS_PATH = "data/raw/customers"
+BRONZE_CUSTOMERS_TABLE = "lakehouse.bronze.customers"
+
 
 def get_spark() -> SparkSession:
   return (
@@ -25,11 +28,11 @@ def get_spark() -> SparkSession:
   )
 
 
-def ingest(spark: SparkSession) -> None:
+def _ingest_csv(spark: SparkSession, raw_path: str, bronze_table: str) -> None:
   df = (
     spark.read.option("header", True)
     .option("inferSchema", True)
-    .csv(RAW_PATH)
+    .csv(raw_path)
     .withColumn("_source_file", F.input_file_name())
     .withColumn("_ingested_at", F.current_timestamp())
   )
@@ -38,14 +41,24 @@ def ingest(spark: SparkSession) -> None:
   df.write.format("delta")
   .mode("append")
   .option("mergeSchema", "true")
-  .saveAsTable(BRONZE_TABLE)
+  .saveAsTable(bronze_table)
 )
 
-print(f"Ingested {df.count()} rows into {BRONZE_TABLE}")
+print(f"Ingested {df.count()} rows into {bronze_table}")
+
+
+def ingest(spark: SparkSession) -> None:
+  """Ingests the orders source. Kept as the default entrypoint so the
+  Airflow DAG's bronze_ingest_orders task can call this directly."""
+  _ingest_csv(spark, RAW_PATH, BRONZE_TABLE)
+
+
+def ingest_customers(spark: SparkSession) -> None:
+  _ingest_csv(spark, RAW_CUSTOMERS_PATH, BRONZE_CUSTOMERS_TABLE)
 
 
 if __name__ == "__main__":
   spark = get_spark()
   ingest(spark)
+  ingest_customers(spark)
   spark.stop()
-  
