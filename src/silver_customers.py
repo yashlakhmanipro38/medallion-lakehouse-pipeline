@@ -24,25 +24,24 @@ def get_spark() -> SparkSession:
 def transform(spark: SparkSession) -> None:
   bronze = spark.table(BRONZE_TABLE)
 
-silver = (
-  bronze.dropDuplicates(["customer_key"])
-  .withColumn("customer_name", F.trim(F.initcap("customer_name")))
-  .withColumn("region", F.trim(F.col("region")))
-  .drop("_source_file", "_ingested_at")
-)
+  silver = (
+    bronze.dropDuplicates(["customer_key"])
+    .withColumn("customer_name", F.trim(F.initcap("customer_name")))
+    .withColumn("region", F.trim(F.col("region")))
+    .drop("_source_file", "_ingested_at")
+  )
 
-(
-  silver.write.format("delta")
-  .mode("overwrite")
-  .option("overwriteSchema", "true")
-  .saveAsTable(SILVER_TABLE)
-)
+  (
+    silver.write.format("delta")
+    .mode("overwrite")
+    .option("overwriteSchema", "true")
+    .saveAsTable(SILVER_TABLE)
+  )
 
-print(f"Wrote {silver.count()} rows to {SILVER_TABLE}")
+  print(f"Wrote {silver.count()} rows to {SILVER_TABLE}")
 
 
 if __name__ == "__main__":
   spark = get_spark()
   transform(spark)
   spark.stop()
-  
