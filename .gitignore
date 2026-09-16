@@ -1,0 +1,7 @@
+data/raw/
+data/streaming/
+data/_checkpoints/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+spark-warehouse/
