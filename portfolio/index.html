@@ -461,6 +461,7 @@ graph LR
 
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.1/mermaid.min.js"></script>
 <script>
 (function(){
   var buttons = document.querySelectorAll('.tab-btn');
@@ -469,6 +470,15 @@ graph LR
     skills: document.getElementById('tab-skills'),
     about: document.getElementById('tab-about')
   };
+  var mermaidRendered = false;
+  function renderMermaidIfVisible(){
+    if (mermaidRendered || !window.mermaid) return;
+    var el = document.querySelector('.mermaid');
+    if (!el || el.offsetParent === null) return; // still hidden, skip
+    mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
+    mermaid.run({ querySelector: '.mermaid' });
+    mermaidRendered = true;
+  }
   buttons.forEach(function(btn){
     btn.addEventListener('click', function(){
       var target = btn.getAttribute('data-tab');
@@ -479,12 +489,11 @@ graph LR
       Object.keys(panels).forEach(function(key){
         panels[key].classList.toggle('active', key === target);
       });
+      renderMermaidIfVisible();
     });
   });
+  renderMermaidIfVisible();
 })();
 </script>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.1/mermaid.min.js"></script>
-<script>if (window.mermaid) { mermaid.initialize({ startOnLoad: false, theme: "neutral" }); mermaid.run({ querySelector: ".mermaid" }); }</script>
 </body>
 </html>
