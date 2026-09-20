@@ -475,9 +475,16 @@ graph LR
     if (mermaidRendered || !window.mermaid) return;
     var el = document.querySelector('.mermaid');
     if (!el || el.offsetParent === null) return; // still hidden, skip
-    mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
-    mermaid.run({ querySelector: '.mermaid' });
     mermaidRendered = true;
+    // Wait two animation frames so the panel has actually finished laying
+    // out (display:none -> block) before Mermaid measures the container;
+    // measuring too early yields a near-zero viewBox and a blank diagram.
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
+        mermaid.run({ querySelector: '.mermaid' });
+      });
+    });
   }
   buttons.forEach(function(btn){
     btn.addEventListener('click', function(){
