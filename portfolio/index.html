@@ -332,16 +332,7 @@
           <div class="stat"><div class="stat-num">4</div><div class="stat-label">Chart Types</div></div>
         </div>
 
-        <div class="mermaid">
-graph LR
-  A[Source generators] --> B[Bronze]
-  B --> C[Silver<br/>dedup · rank · running totals]
-  C --> D[Gold<br/>joins · fact tables]
-  D --> E[Visualizations]
-  F[DAG · 1-8 workers] -.orchestrates.-> B
-  F -.orchestrates.-> C
-  F -.orchestrates.-> D
-        </div>
+        <div class="mermaid" id="lakehouse-diagram"></div>
 
         <div class="stack">
           <span class="chip">PySpark</span>
@@ -471,20 +462,44 @@ graph LR
     about: document.getElementById('tab-about')
   };
   var mermaidRendered = false;
-  function renderMermaidIfVisible(){
+  var MERMAID_SRC = [
+    'graph LR',
+    '  A[Source generators] --> B[Bronze]',
+    '  B --> C["Silver\ndedup . rank . running totals"]',
+    '  C --> D["Gold\njoins . fact tables"]',
+    '  D --> E[Visualizations]',
+    '  F["DAG . 1-8 workers"] -.orchestrates.-> B',
+    '  F -.orchestrates.-> C',
+    '  F -.orchestrates.-> D'
+  ].join('\n');
+  function mermaidLooksDegenerate(){
+    var svg = document.querySelector('#lakehouse-diagram svg');
+    if (!svg) return true;
+    var vb = svg.getAttribute('viewBox');
+    if (!vb) return true;
+    var parts = vb.split(' ').map(Number);
+    return !parts[2] || parts[2] < 40; // a real diagram is hundreds of units wide
+  }
+  async function attemptMermaidRender(){
+    var el = document.getElementById('lakehouse-diagram');
+    el.removeAttribute('data-processed');
+    el.textContent = MERMAID_SRC;
+    await mermaid.run({ querySelector: '#lakehouse-diagram' });
+  }
+  async function renderMermaidIfVisible(){
     if (mermaidRendered || !window.mermaid) return;
-    var el = document.querySelector('.mermaid');
+    var el = document.getElementById('lakehouse-diagram');
     if (!el || el.offsetParent === null) return; // still hidden, skip
     mermaidRendered = true;
-    // Wait two animation frames so the panel has actually finished laying
-    // out (display:none -> block) before Mermaid measures the container;
-    // measuring too early yields a near-zero viewBox and a blank diagram.
-    requestAnimationFrame(function(){
-      requestAnimationFrame(function(){
-        mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
-        mermaid.run({ querySelector: '.mermaid' });
-      });
-    });
+    mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
+    if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch(e){} }
+    await attemptMermaidRender();
+    // Mermaid's very first render on a fresh page can come out with a
+    // degenerate near-zero layout (a cold-start quirk); if that happens,
+    // just try again once from the same known-good source string.
+    if (mermaidLooksDegenerate()) {
+      await attemptMermaidRender();
+    }
   }
   buttons.forEach(function(btn){
     btn.addEventListener('click', function(){
